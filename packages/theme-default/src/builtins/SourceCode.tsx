@@ -1,4 +1,5 @@
 import React from 'react';
+import { LiveEditor } from 'react-live';
 import type { Language } from 'prism-react-renderer';
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import { useCopy } from 'dumi/theme';
@@ -8,10 +9,11 @@ import './SourceCode.less';
 export interface ICodeBlockProps {
   code: string;
   lang: Language;
+  liveCode?: boolean; 
   showCopy?: boolean;
 }
 
-export default ({ code, lang, showCopy = true }: ICodeBlockProps) => {
+export default ({ code, lang, showCopy = true, liveCode = false }: ICodeBlockProps) => {
   const [copyCode, copyStatus] = useCopy();
 
   return (
@@ -26,13 +28,16 @@ export default ({ code, lang, showCopy = true }: ICodeBlockProps) => {
                 onClick={() => copyCode(code)}
               />
             )}
-            {tokens.map((line, i) => (
-              <div {...getLineProps({ line, key: i })}>
-                {line.map((token, key) => (
-                  <span {...getTokenProps({ token, key })} />
-                ))}
-              </div>
-            ))}
+            {
+              liveCode ? <LiveEditor /> :
+                tokens.map((line, i) => (
+                  <div {...getLineProps({ line, key: i })}>
+                    {line.map((token, key) => (
+                      <span {...getTokenProps({ token, key })} />
+                    ))}
+                  </div>
+              ))
+            }
           </pre>
         )}
       </Highlight>

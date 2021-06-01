@@ -1,8 +1,9 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
+import { LiveProvider, LiveError, LivePreview } from 'react-live';
 import Tabs, { TabPane } from 'rc-tabs';
 // @ts-ignore
 import { history } from 'dumi';
-import type { IPreviewerComponentProps} from 'dumi/theme';
+import type { IPreviewerComponentProps } from 'dumi/theme';
 import {
   context,
   useCodeSandbox,
@@ -14,7 +15,7 @@ import {
   useTSPlaygroundUrl,
   Link,
   AnchorLink,
-  usePrefersColor
+  usePrefersColor,
 } from 'dumi/theme';
 import type { ICodeBlockProps } from './SourceCode';
 import SourceCode from './SourceCode';
@@ -102,151 +103,163 @@ const Previewer: React.FC<IPreviewerProps> = oProps => {
   }
 
   return (
-    <div
-      style={props.style}
-      className={[
-        props.className,
-        '__dumi-default-previewer',
-        isActive ? '__dumi-default-previewer-target' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-      id={props.identifier}
-      data-debug={props.debug || undefined}
-      data-iframe={props.iframe || undefined}
-    >
-      {props.iframe && <div className="__dumi-default-previewer-browser-nav" />}
+    <LiveProvider code={currentFileCode}>
       <div
-        ref={demoRef}
-        className="__dumi-default-previewer-demo"
-        style={{
-          transform: props.transform ? 'translate(0, 0)' : undefined,
-          padding: props.compact || (props.iframe && props.compact !== false) ? '0' : undefined,
-          background: props.background,
-        }}
+        style={props.style}
+        className={[
+          props.className,
+          '__dumi-default-previewer',
+          isActive ? '__dumi-default-previewer-target' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        id={props.identifier}
+        data-debug={props.debug || undefined}
+        data-iframe={props.iframe || undefined}
       >
-        {props.iframe ? (
-          <iframe
-            title="dumi-previewer"
-            style={{
-              // both compatible with unit or non-unit, such as 100, 100px, 100vh
-              height: String(props.iframe).replace(/(\d)$/, '$1px'),
-            }}
-            key={iframeKey}
-            src={demoUrl}
-            ref={iframeRef}
-          />
-        ) : (
-          props.children
-        )}
-      </div>
-      <div className="__dumi-default-previewer-desc" data-title={props.title}>
-        {props.title && <AnchorLink to={`#${props.identifier}`}>{props.title}</AnchorLink>}
-        {props.description && (
-          <div
-            // eslint-disable-next-line
-            dangerouslySetInnerHTML={{ __html: props.description }}
-          />
-        )}
-      </div>
-      <div className="__dumi-default-previewer-actions">
-        {openCSB && (
-          <button
-            title="Open demo on CodeSandbox.io"
-            className="__dumi-default-icon"
-            role="codesandbox"
-            onClick={openCSB}
-          />
-        )}
-        {openRiddle && (
-          <button
-            title="Open demo on Riddle"
-            className="__dumi-default-icon"
-            role="riddle"
-            onClick={openRiddle}
-          />
-        )}
-        {props.motions && (
-          <button
-            title="Execute motions"
-            className="__dumi-default-icon"
-            role="motions"
-            disabled={isMotionRunning}
-            onClick={() => execMotions()}
-          />
-        )}
-        {props.iframe && (
-          <button
-            title="Reload demo iframe page"
-            className="__dumi-default-icon"
-            role="refresh"
-            onClick={() => setIframeKey(Math.random())}
-          />
-        )}
-        {!props.hideActions?.includes('EXTERNAL') && (
-          <Link target="_blank" to={demoUrl}>
-            <button
-              title="Open demo in new tab"
-              className="__dumi-default-icon"
-              role="open-demo"
-              type="button"
-            />
-          </Link>
-        )}
-        <span />
-        <button
-          title="Copy source code"
-          className="__dumi-default-icon"
-          role="copy"
-          data-status={copyStatus}
-          onClick={() => copyCode(currentFileCode)}
-        />
-        {sourceType === 'tsx' && showSource && (
-          <Link target="_blank" to={playgroundUrl}>
-            <button
-              title="Get JSX via TypeScript Playground"
-              className="__dumi-default-icon"
-              role="change-tsx"
-              type="button"
-            />
-          </Link>
-        )}
-        <button
-          title="Toggle source code panel"
-          className={`__dumi-default-icon${showSource ? ' __dumi-default-btn-expand' : ''}`}
-          role="source"
-          type="button"
-          onClick={() => setShowSource(!showSource)}
-        />
-      </div>
-      {showSource && (
-        <div className="__dumi-default-previewer-source-wrapper">
-          {!isSingleFile && (
-            <Tabs
-              className="__dumi-default-previewer-source-tab"
-              prefixCls="__dumi-default-tabs"
-              moreIcon="···"
-              defaultActiveKey={currentFile}
-              onChange={handleFileChange}
-            >
-              {Object.keys(props.sources).map(filename => (
-                <TabPane
-                  tab={
-                    filename === '_'
-                      ? `index.${getSourceType(filename, props.sources[filename])}`
-                      : filename
-                  }
-                  key={filename}
+        {props.iframe && <div className="__dumi-default-previewer-browser-nav" />}
+        <div
+          ref={demoRef}
+          className="__dumi-default-previewer-demo"
+          style={{
+            transform: props.transform ? 'translate(0, 0)' : undefined,
+            padding: props.compact || (props.iframe && props.compact !== false) ? '0' : undefined,
+            background: props.background,
+          }}
+        >
+          {
+            (() => {
+              if (props.iframe) {
+                return <iframe
+                  title="dumi-previewer"
+                  style={{
+                    // both compatible with unit or non-unit, such as 100, 100px, 100vh
+                    height: String(props.iframe).replace(/(\d)$/, '$1px'),
+                  }}
+                  key={iframeKey}
+                  src={demoUrl}
+                  ref={iframeRef}
                 />
-              ))}
-            </Tabs>
-          )}
-          <div className="__dumi-default-previewer-source">
-            <SourceCode code={currentFileCode} lang={sourceType} showCopy={false} />
-          </div>
+              }
+              if (props.liveCode) {
+                return (
+                <React.Fragment>
+                  <LiveError />
+                  <LivePreview />
+                </React.Fragment>)
+              } 
+              return props.children
+            })()
+          }
         </div>
-      )}
-    </div>
+        <div className="__dumi-default-previewer-desc" data-title={props.title}>
+          {props.title && <AnchorLink to={`#${props.identifier}`}>{props.title}</AnchorLink>}
+          {props.description && (
+            <div
+              // eslint-disable-next-line
+              dangerouslySetInnerHTML={{ __html: props.description }}
+            />
+          )}
+        </div>
+        <div className="__dumi-default-previewer-actions">
+          {openCSB && (
+            <button
+              title="Open demo on CodeSandbox.io"
+              className="__dumi-default-icon"
+              role="codesandbox"
+              onClick={openCSB}
+            />
+          )}
+          {openRiddle && (
+            <button
+              title="Open demo on Riddle"
+              className="__dumi-default-icon"
+              role="riddle"
+              onClick={openRiddle}
+            />
+          )}
+          {props.motions && (
+            <button
+              title="Execute motions"
+              className="__dumi-default-icon"
+              role="motions"
+              disabled={isMotionRunning}
+              onClick={() => execMotions()}
+            />
+          )}
+          {props.iframe && (
+            <button
+              title="Reload demo iframe page"
+              className="__dumi-default-icon"
+              role="refresh"
+              onClick={() => setIframeKey(Math.random())}
+            />
+          )}
+          {!props.hideActions?.includes('EXTERNAL') && (
+            <Link target="_blank" to={demoUrl}>
+              <button
+                title="Open demo in new tab"
+                className="__dumi-default-icon"
+                role="open-demo"
+                type="button"
+              />
+            </Link>
+          )}
+          <span />
+          <button
+            title="Copy source code"
+            className="__dumi-default-icon"
+            role="copy"
+            data-status={copyStatus}
+            onClick={() => copyCode(currentFileCode)}
+          />
+          {sourceType === 'tsx' && showSource && (
+            <Link target="_blank" to={playgroundUrl}>
+              <button
+                title="Get JSX via TypeScript Playground"
+                className="__dumi-default-icon"
+                role="change-tsx"
+                type="button"
+              />
+            </Link>
+          )}
+          <button
+            title="Toggle source code panel"
+            className={`__dumi-default-icon${showSource ? ' __dumi-default-btn-expand' : ''}`}
+            role="source"
+            type="button"
+            onClick={() => setShowSource(!showSource)}
+          />
+        </div>
+        {showSource && (
+          <div className="__dumi-default-previewer-source-wrapper">
+            {!isSingleFile && (
+              <Tabs
+                className="__dumi-default-previewer-source-tab"
+                prefixCls="__dumi-default-tabs"
+                moreIcon="···"
+                defaultActiveKey={currentFile}
+                onChange={handleFileChange}
+              >
+                {Object.keys(props.sources).map(filename => (
+                  <TabPane
+                    tab={
+                      filename === '_'
+                        ? `index.${getSourceType(filename, props.sources[filename])}`
+                        : filename
+                    }
+                    key={filename}
+                  />
+                ))}
+              </Tabs>
+            )}
+            <div className="__dumi-default-previewer-source">
+              <SourceCode code={currentFileCode} lang={sourceType} showCopy={false} liveCode={props.liveCode} />
+            </div>
+          </div>
+        )}
+      </div>
+    </LiveProvider>
   );
 };
 
