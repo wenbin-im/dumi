@@ -47,6 +47,7 @@
     "umi-plugin-hire": "^1.0.1"
   },
   "resolutions": {
+    "typescript": "~4.2.3",
     "@types/react": "^16.14.2"
   },
   "husky": {
